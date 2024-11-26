@@ -2,9 +2,13 @@
 
 ### Sommaire 
 Présentation de l'application
+
 Exemples de structure de données dans les JSON
+
 Lancement de l'application
+
 Tests avec Insomnia
+
 Tests avec les clients grpc
 
 ### Présentation de l'application
