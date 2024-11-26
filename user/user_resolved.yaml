@@ -1,0 +1,222 @@
+openapi: 3.0.0
+info:
+  title: User Service API
+  description: API pour interagir avec les utilisateurs et les réservations de films.
+  version: 1.0.0
+  contact:
+    name: Support Team
+    email: support@yourcompany.com
+    url: http://www.yourcompany.com
+
+servers:
+  - url: http://localhost:3202
+    description: Serveur local
+
+paths:
+  /:
+    get:
+      summary: "Page d'accueil du service utilisateur"
+      description: "Renvoie un message de bienvenue."
+      responses:
+        '200':
+          description: "Page d'accueil"
+          content:
+            text/html:
+              schema:
+                type: string
+                example: "<h1>Welcome to the User Service</h1>"
+
+  /users/bookings:
+    get:
+      summary: "Obtenir toutes les réservations"
+      description: "Récupère toutes les réservations existantes via gRPC."
+      responses:
+        '200':
+          description: "Liste des réservations"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    userid:
+                      type: string
+                    dates:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          date:
+                            type: string
+                            format: date
+                          movies:
+                            type: array
+                            items:
+                              type: string
+                    example:
+                      - userid: "user123"
+                        dates:
+                          - date: "2024-11-21"
+                            movies:
+                              - "movie1"
+                              - "movie2"
+
+  /users/{userid}/bookings:
+    get:
+      summary: "Obtenir les réservations d'un utilisateur spécifique"
+      description: "Récupère les réservations d'un utilisateur spécifique via gRPC."
+      parameters:
+        - name: "userid"
+          in: "path"
+          required: true
+          description: "ID de l'utilisateur"
+          schema:
+            type: string
+      responses:
+        '200':
+          description: "Liste des dates et films réservés"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    date:
+                      type: string
+                      format: date
+                    movies:
+                      type: array
+                      items:
+                        type: string
+        '404':
+          description: "Utilisateur non trouvé"
+        '500':
+          description: "Erreur interne du serveur"
+
+  /users/{userid}/movies:
+    post:
+      summary: "Obtenir les détails des films pour un utilisateur"
+      description: "Récupère les détails des films réservés pour un utilisateur via GraphQL."
+      parameters:
+        - name: "userid"
+          in: "path"
+          required: true
+          description: "ID de l'utilisateur"
+          schema:
+            type: string
+      requestBody:
+        description: "Requête POST pour récupérer les films réservés"
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  example: "{ movie_with_id(_id: \"movie_id\") { title, rating, director } }"
+      responses:
+        '200':
+          description: "Détails des films"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    data:
+                      type: object
+                      properties:
+                        movie_with_id:
+                          type: object
+                          properties:
+                            id:
+                              type: string
+                            title:
+                              type: string
+                            rating:
+                              type: string
+                            director:
+                              type: string
+        '400':
+          description: "Requête mal formulée"
+        '500':
+          description: "Erreur interne du serveur"
+
+  /users/{userid}/addbooking:
+    post:
+      summary: "Ajouter une réservation pour un utilisateur"
+      description: "Ajoute une nouvelle réservation pour un utilisateur via gRPC."
+      parameters:
+        - name: "userid"
+          in: "path"
+          required: true
+          description: "ID de l'utilisateur"
+          schema:
+            type: string
+      requestBody:
+        description: "Requête POST pour ajouter une réservation"
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date:
+                  type: string
+                  format: date
+                  example: "2024-11-21"
+                movies:
+                  type: array
+                  items:
+                    type: string
+                  example:
+                    - "movie1"
+                    - "movie2"
+      responses:
+        '200':
+          description: "Réservation ajoutée avec succès"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Booking added successfully."
+        '400':
+          description: "Requête mal formulée, manque des paramètres"
+        '500':
+          description: "Erreur interne du serveur"
+
+components:
+  schemas:
+    Booking:
+      type: object
+      properties:
+        userid:
+          type: string
+        dates:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              movies:
+                type: array
+                items:
+                  type: string
+    Movie:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        rating:
+          type: string
+        director:
+          type: string
