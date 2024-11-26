@@ -6,31 +6,40 @@ import showtime_pb2
 import showtime_pb2_grpc
 import json
 
+# Définition du service gRPC BookingsServicer
 class BookingsServicer(booking_pb2_grpc.BookingsServicer):
 
-    def __init__(self):
+    # Chargement des données des réservations depuis un fichier JSON
+    def __init__(self): 
         with open('{}/data/bookings.json'.format("."), "r") as jsf:
             self.db = json.load(jsf)["bookings"]
 
+    # Méthode pour récupérer les horaires d'un utilisateur spécifique
     def GetTimesForBooking(self, request):
         for booking in self.db:
-            if booking['userid'] == request.userid:
+            if booking['userid'] == request.userid: 
                 for time in booking['dates'] :
-                    yield booking_pb2.TimeB(date=time['date'], movies=time['movies'])
+                    # Retourne chaque date et les films associés
+                    yield booking_pb2.TimeB(date=time['date'], movies=time['movies']) 
 
+    # Méthode pour récupérer toutes les réservations
     def GetAllBookings(self, request, context):
         for booking in self.db:
             userID = booking_pb2.UserID(userid=booking['userid'])
-            times = self.GetTimesForBooking(userID)
-            yield booking_pb2.Booking(userid=booking['userid'], dates=times)
+            times = self.GetTimesForBooking(userID) 
+            # Retourne une réservation complète pour chaque utilisateur
+            yield booking_pb2.Booking(userid=booking['userid'], dates=times) 
 
+    # Méthode pour récupérer les réservations d'un utilisateur donné
     def GetBookingForUser(self, request, context):
         for booking in self.db:
             if booking['userid'] == request.userid:
                 userID = booking_pb2.UserID(userid=booking['userid'])
                 times = self.GetTimesForBooking(userID)
+                # Retourne les données de réservation pour l'utilisateur
                 return booking_pb2.Booking(userid=booking['userid'], dates=times)
-            
+
+    # Méthode pour ajouter une réservation pour un utilisateur donné     
     def AddBookingByUser(self, request, context):
         
         # Convertion du résultat de la requête en un format dictionnaire pour pouvoir le manipuler en json
@@ -70,12 +79,15 @@ class BookingsServicer(booking_pb2_grpc.BookingsServicer):
         # Envoi d'un message retour de succès
         return booking_pb2.Response(response="Réservation ajoutée avec succès !")
 
+# Récupère les films disponibles pour une date spécifique
 def get_movies_by_date(stub, date):
     return stub.GetMoviesByDate(date)
 
+# Récupère tout le programme des films
 def get_schedule(stub):
     return stub.GetSchedule(showtime_pb2.Empty())
 
+# Fonction pour démarrer le serveur gRPC
 def serve():
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
@@ -85,6 +97,6 @@ def serve():
 
     server.wait_for_termination()
 
-
+# Point d'entrée du programme
 if __name__ == '__main__':
     serve()

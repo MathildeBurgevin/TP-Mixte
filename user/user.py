@@ -4,28 +4,27 @@ import requests
 import json
 from werkzeug.exceptions import NotFound
 
-
-# CALLING gRPC requests
-# TODO à décommenter pour GRPC
  
 import grpc
 from concurrent import futures
 import booking_pb2
 import booking_pb2_grpc
 
-# CALLING GraphQL requests
-# todo to complete
 
 app = Flask(__name__)
 
+# Définition de l'URL de l'API GraphQL (pour les films)
 MOVIE_API_URL = "http://localhost:3001"
 
+# Route par défaut
 @app.route("/", methods=['GET'])
 def home():
     return "<h1>Welcome to the User Service</h1>"
 
+# Route pour récupérer toutes les réservations des utilisateurs
 @app.route("/users/bookings", methods=['GET'])
 def get_all_bookings():
+    # Connexion au service gRPC Booking sur localhost:3003
     with grpc.insecure_channel('localhost:3003') as channel:
         stub = booking_pb2_grpc.BookingsStub(channel)
 
@@ -33,6 +32,7 @@ def get_all_bookings():
 
         bookings = stub.GetAllBookings(empty)
         
+        # Transformation des données reçues en JSON
         bookings_list = []
         for booking in bookings :
             booking_data = {
@@ -47,10 +47,12 @@ def get_all_bookings():
             }
             bookings_list.append(booking_data)
         
+        # Retourne les réservations sous forme de JSON
         return jsonify(bookings_list)
 
     channel.close()
 
+# Route pour récupérer les réservations d'un utilisateur spécifique
 @app.route("/users/<userid>/bookings", methods=['GET'])
 def get_user_bookings(userid):
     with grpc.insecure_channel('localhost:3003') as channel:
@@ -67,10 +69,12 @@ def get_user_bookings(userid):
                     }
             dates_list.append(date_data)
 
+        # Retourne les réservations de l'utilisateur
         return jsonify(dates_list)
     
     channel.close()
 
+# Route pour récupérer les détails des films réservés par un utilisateur
 @app.route("/users/<userid>/movies", methods=['POST'])
 def get_user_movies(userid):
 
@@ -98,11 +102,12 @@ def get_user_movies(userid):
                 if movie_response.status_code == 200:
                     movie_details.append(movie_response.json())
 
-        #print (json.dumps(movie_details))
+        # Retourne les détails des films
         return jsonify(movie_details), 200
     
     channel.close()
 
+# Route pour ajouter une réservation pour un utilisateur
 @app.route("/users/<userid>/addbooking", methods=['POST'])
 def add_booking(userid):
     # Récupérer les données JSON de la requête POST
@@ -111,9 +116,9 @@ def add_booking(userid):
         return jsonify({"error": "Invalid request. 'date' and 'movies' are required."}), 400
 
     try:
-        date = data['date']  # La date unique pour la réservation
-        movies = data['movies']  # Liste des films associés
-
+        date = data['date'] 
+        movies = data['movies']  
+        
         with grpc.insecure_channel('localhost:3003') as channel:
             stub = booking_pb2_grpc.BookingsStub(channel)
 
